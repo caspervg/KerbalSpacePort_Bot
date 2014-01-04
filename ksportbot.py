@@ -43,7 +43,7 @@ def do_bot():
     for comment in comments:
         for reply in comment.replies:
             if reply == '[deleted]' or reply.author is None:
-                done.add(comment.id)
+                continue
             elif reply.author.name.lower() == botconfig.username.lower():
                 done.add(comment.id)
 
