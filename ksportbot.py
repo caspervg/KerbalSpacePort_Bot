@@ -42,7 +42,9 @@ def do_bot():
     regex = re.compile('LinkMe: ([^\.]+)\.', re.IGNORECASE)
     for comment in comments:
         for reply in comment.replies:
-            if reply.author.name.lower() == botconfig.username.lower():
+            if reply == '[deleted]' or reply.author is None:
+                done.add(comment.id)
+            elif reply.author.name.lower() == botconfig.username.lower():
                 done.add(comment.id)
 
         if comment.id not in done and comment.author.name.lower() != botconfig.username.lower():
