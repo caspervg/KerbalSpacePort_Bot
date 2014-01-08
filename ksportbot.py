@@ -8,7 +8,6 @@ import logging
 import botconfig
 from bs4 import BeautifulSoup as bs
 
-version = '0.5.2-BETA'
 logging.basicConfig(filename='ksportbot.log', level=logging.INFO, format='%(levelname)s:%(asctime)s:%(message)s')
 logger = logging.getLogger("KSPortBot")
 
@@ -22,24 +21,34 @@ def fetch_link(match):
     results = page.find_all(attrs={'class': "search_item"})
     if len(results) is not 0:
         logger.info('Found a result for %s', match)
-        return 'http://kerbalspaceport.com/?p=' + results[0]['id']
+        shortlink = 'http://kerbalspaceport.com/?p=' + results[0]['id']
+        req = requests.get(shortlink)
+        page = bs(req.text)
+        title = page.find_all('h1')[1].text
+        author = page.find_all('a', attrs={'rel': "author"})[0].text
+
+        return {
+            'link': shortlink,
+            'title': title,
+            'author': author
+        }
     else:
         logger.info('Found no results for %s', match)
         return None
 
 
 def do_bot():
-    r = praw.Reddit('KSPortBot/' + version + ' by /u/Kostenloze')
+    r = praw.Reddit('KSPortBot/' + botconfig.version + ' by /u/Kostenloze')
     r.login(botconfig.username, botconfig.password)
 
-    subreddit = r.get_subreddit('ksportbot+kerbalspaceprogram')
+    subreddit = r.get_subreddit('kerbalspaceprogram+ksportbot')
     logger.info('Logged in and got access to the subreddits')
     comments = subreddit.get_comments()
 
     done = set()
     suitable = 0
 
-    regex = re.compile('LinkMe: ([^\.]+)\.', re.IGNORECASE)
+    regex = re.compile('LinkMe: ([^\.^\\n]+)\.', re.IGNORECASE)
     for comment in comments:
         for reply in comment.replies:
             if reply == '[deleted]' or reply.author is None:
@@ -51,15 +60,14 @@ def do_bot():
             reply = []
 
             for match in regex.findall(comment.body):
-                url = fetch_link(match)
-                if url is None:
+                result = fetch_link(match)
+                if result is None:
                     reply.append('* Sorry, I could not find ' + match)
                 else:
-                    reply.append('* [' + match + '](' + url + ')')
+                    reply.append('* [' + result['title'] + '](' + result['link'] + ') by ' + result['author'])
 
-            reply.append('\n\n*^This ^bot ^is ^still ^in ^development. ^It ^automatically ^links ^KerbalSpacePort ^Mods'
-                         ' ^if ^you ^ask ^it ^to ^do ^so.*'
-                         '\n\n*^Message ^/u/Kostenloze ^if ^you ^experience ^any ^issues ^with ^it.*')
+            reply.append('\n*^I ^automatically ^link ^KerbalSpacePort ^Mods ^if ^you ^ask ^me ^nicely.*'
+                         '\n\n*^Check ^me ^out ^on ^[Github](https://github.com/caspervg/KerbalSpacePort_Bot) ^or ^message ^/u/Kostenloze*')
 
             if len(reply) > 1:
                 while True:
