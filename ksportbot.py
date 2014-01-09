@@ -86,9 +86,6 @@ def do_bot():
     else:
         logger.info("Found %s suitable posts this round", suitable)
 
-
-while True:
-    logger.info("Starting a new round")
-    do_bot()
-    logger.info("Finished this round, sleeping for two minutes")
-    time.sleep(120)
+logger.info("Starting a new round")
+do_bot()
+logger.info("Finished this round")
